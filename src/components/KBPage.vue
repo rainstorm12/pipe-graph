@@ -96,8 +96,6 @@ export default {
         ...mapState(['server_ip']),
     },
     mounted(){
-        // this.KBData=[{knowledge:"1",content:"好"},{knowledge:"2",content:"不好"}]
-
         this.datainit()
     },
     methods: {
@@ -106,16 +104,21 @@ export default {
             axios.get('http://'+this.server_ip+'/api/ShowKnowledgeData').then(
                 response=>{
                     console.log('请求成功',response.data)
-                    for(let j=0; j<response.data["KnowledgeData"].length;j++){
-                        let knowledge = response.data["KnowledgeData"][j].fields.Knowledge
-                        let content = response.data["KnowledgeData"][j].fields.Content
-                        this.KBData.push({knowledge:knowledge,content:content})
-                    }
+                    this.KBData_init(response.data)
                 },
                 error=>{
                     console.log('请求失败',error.message)
                 }
             )
+        },
+        KBData_init(data){
+            this.KBData = []
+            for(let j=0; j<data["KnowledgeData"].length;j++){
+                let knowledge = data["KnowledgeData"][j].fields.Knowledge
+                let content = data["KnowledgeData"][j].fields.Content
+                let pk = data["KnowledgeData"][j].pk
+                this.KBData.push({knowledge:knowledge,content:content,pk:pk})
+            }
         },
         /*el-button按键的动态效果，css好像被模板绑定了，所以只能通过js实现 */
         add_button_enter(event){
@@ -134,29 +137,49 @@ export default {
         },
         ActEdit(){//执行编辑操作
             this.isOpenDialog = false
-            // this.$store.commit('UPDATE_NODE_MODEL',this.edit_tuple)
-            // this.datainit()
-            this.$message({
-                message: '编辑成功',
-                type: 'success'
-            })
+            axios.post('http://'+this.server_ip+'/api/ModifyKnowledgeData',this.edit_tuple).then(
+                response=>{
+                    console.log('请求成功',response.data)
+                    this.datainit()
+                    this.$message({
+                        message: '编辑成功',
+                        type: 'success'
+                    })
+                },
+                error=>{
+                    console.log('请求失败',error.message)
+                    this.$message({
+                        message: error.message,
+                        type: 'error'
+                    })
+                }
+            )
         },
         /*del button*/
         StartDel(index,row){
-            // this.$store.commit('DEL_RELATION_MODEL',del_tuple)
             this.$confirm('此操作将永久删除该知识, 是否继续?', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 })
                 .then(() => {
-                    let del_tuple = this.KBData[index]
-                    this.$message({
-                        type: 'success',
-                        message: '删除成功!'
-                    });
-                    // this.DeleteNode()
-                    // this.datainit()
+                    axios.post('http://'+this.server_ip+'/api/DeleteKnowledgeData',this.KBData[index]).then(
+                        response=>{
+                            console.log('请求成功',response.data)
+                            this.datainit()
+                            this.$message({
+                                message: '删除成功',
+                                type: 'success'
+                            })
+                        },
+                        error=>{
+                            console.log('请求失败',error.message)
+                            this.$message({
+                                message: error.message,
+                                type: 'error'
+                            })
+                        }
+                    )
                 })
                 .catch(() => {
                     this.$message({
@@ -183,12 +206,23 @@ export default {
                     })
                 }
             else{
-                // let result = this.$store.commit('ADD_RELATION_MODEL',this.add_tuple)
-                // this.datainit()
-                this.$message({
-                        message: '添加成功',
-                        type: 'success'
-                    })
+                axios.post('http://'+this.server_ip+'/api/AddKnowledgeData',this.add_tuple).then(
+                    response=>{
+                        console.log('请求成功',response.data)
+                        this.datainit()
+                        this.$message({
+                            message: '添加成功',
+                            type: 'success'
+                        })
+                    },
+                    error=>{
+                        console.log('请求失败',error.message)
+                        this.$message({
+                            message: error.message,
+                            type: 'error'
+                        })
+                    }
+                )
             }
         },
     },
